@@ -272,4 +272,46 @@ public class OperatorsTest {
                 .expectComplete()
                 .verify();
     }
+
+    @Test
+    public void mergeSequentialOperator() throws Exception {
+        Flux<String> flux1 = Flux.just("a", "b").delayElements(Duration.ofMillis(200));
+        Flux<String> flux2 = Flux.just("c", "d");
+
+        Flux<String> mergeFlux = Flux.mergeSequential(flux1, flux2, flux1)
+                .delayElements(Duration.ofMillis(200))
+                .log();
+
+        StepVerifier
+                .create(mergeFlux)
+                .expectSubscription()
+                .expectNext("a", "b", "c", "d", "a", "b")
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void mergeDelayErrorOperator() throws Exception {
+        Flux<String> flux1 = Flux.just("a", "b")
+                .map(s ->{
+                    if(s.equals("b")){
+                        throw new IllegalArgumentException();
+                    }
+                    return s;
+                }).doOnError(t-> log.error("We could do something with this"));
+
+        Flux<String> flux2 = Flux.just("c", "d");
+
+        Flux<String> mergeFlux = Flux.mergeDelayError(2, flux1, flux2, flux1)
+                .log();
+
+        mergeFlux.subscribe(log::info);
+
+        StepVerifier
+                .create(mergeFlux)
+                .expectSubscription()
+                .expectNext("a", "c", "d", "a")
+                .expectError()
+                .verify();
+    }
 }
