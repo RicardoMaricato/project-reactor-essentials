@@ -6,7 +6,9 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import reactor.blockhound.BlockHound;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -20,6 +22,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class OperatorsTest {
+
+    @BeforeAll
+    public static void setUp() {
+        BlockHound.install(builder ->
+                builder.allowBlockingCallsInside("org.slf4j.impl.SimpleLogger","write"));
+    }
 
     @Test
     public void subscribeOnSimple() {
@@ -348,6 +356,7 @@ public class OperatorsTest {
                 .expectNext("nameA1","nameA2", "nameB1","nameB2")
                 .verifyComplete();
     }
+
     public Flux<String> findByName(String name){
         return name.equals("A") ? Flux.just("nameA1","nameA2").delayElements(Duration.ofMillis(100)) : Flux.just("nameB1","nameB2");
     }
