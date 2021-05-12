@@ -219,5 +219,21 @@ public class FluxTest {
                 .expectComplete()
                 .verify();
     }
+
+    @Test
+    public void connectableFluxAutoConnect() throws Exception {
+        Flux<Integer> fluxAutoConnect = Flux.range(1, 5)
+                .log()
+                .delayElements(Duration.ofMillis(100))
+                .publish()
+                .autoConnect(2);
+
+        StepVerifier
+                .create(fluxAutoConnect)
+                .then(fluxAutoConnect::subscribe)
+                .expectNext(1,2,3,4,5)
+                .expectComplete()
+                .verify();
+    }
 }
 
